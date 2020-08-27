@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, abort
 from flask import make_response, request
-from flask import url_for
+from services.route_security import make_public_task
+
 
 
 app = Flask(__name__)
@@ -22,14 +23,6 @@ tasks = [
 ]
 
 
-def make_public_task(task):
-    new_task = {}
-    for field in task:
-        if field == 'id':
-            new_task['uri'] = url_for('get_task', task_id=task['id'], _external=True)
-        else:
-            new_task[field] = task[field]
-    return new_task
 
 
 @app.route('/todo/api/v1.0/tasks', methods=['POST'])
@@ -56,12 +49,7 @@ def get_task(task_id):
     task = list(filter(lambda t: t['id'] == task_id, tasks))
     if len(task) == 0:
         abort(404)
-    return jsonify({'task': task[0]})
-
-
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+    return jsonify({'task': list(map(make_public_task, task[0]))})
 
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['PUT'])
