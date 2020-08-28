@@ -1,16 +1,32 @@
 import os
-import sys
+from flask import Flask
 
-from flask import Flask, make_response, jsonify
-from flask import SQLAlchemy
-
-app = Flask(__name__)
-app.config.from_object('config')
-
-db = SQLAlchemy(app)
+from .database import db, ma
+import config
 
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(config.DevelopmentConfig)
+
+    db.init_app(app)
+    ma.init_app(app)
+    with app.test_request_context():
+        db.create_all()
+
+    if app.debug == True:
+        try:
+            from flask_debugtoolbar import DebugToolbarExtension
+            toolbar = DebugToolbarExtension(app)
+        except:
+            pass
+
+    import app.neibour.controllers as neibour
+
+    app.register_blueprint(neibour.module)
+
+    return app
+
+
+
 
